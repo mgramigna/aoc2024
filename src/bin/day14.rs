@@ -1,9 +1,9 @@
-use std::{ops::Range, str::FromStr};
+use std::{collections::HashMap, ops::Range, str::FromStr};
 
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Robot {
     p: (i32, i32),
     v: (i32, i32),
@@ -64,6 +64,32 @@ impl Robot {
     }
 }
 
+fn print_grid(robots: &[Robot], width: i32, height: i32) {
+    let mut robot_map = HashMap::<String, u32>::new();
+
+    for robot in robots {
+        let k = format!("{}-{}", robot.p.0, robot.p.1).to_string();
+        *robot_map.entry(k).or_insert(0) += 1;
+    }
+
+    let mut res = String::from("");
+    for y in 0..height {
+        for x in 0..width {
+            let k = format!("{}-{}", x, y).to_string();
+
+            if let Some(count) = robot_map.get(&k) {
+                res += &format!("{}", count);
+            } else {
+                res += ".";
+            }
+        }
+
+        res += "\n";
+    }
+
+    println!("{}", res);
+}
+
 fn range_contains(range: &Range<i32>, n: &i32) -> bool {
     range.contains(n)
 }
@@ -122,8 +148,47 @@ fn part_one(input: &str, width: i32, height: i32) -> i64 {
     ur * ul * dr * dl
 }
 
-fn part_two(input: &str, width: i32, height: i32) -> i64 {
-    todo!()
+fn std_deviation(data: &[i32]) -> f32 {
+    let sum = data.iter().sum::<i32>() as f32;
+    let count = data.len() as f32;
+    let mean = sum / count;
+    let variance = data
+        .iter()
+        .map(|value| {
+            let distance = mean - *value as f32;
+            distance * distance
+        })
+        .sum::<f32>()
+        / count;
+
+    variance.sqrt()
+}
+
+fn part_two(input: &str, width: i32, height: i32) -> usize {
+    let mut robots = input
+        .lines()
+        .map(|l| l.trim().parse::<Robot>().unwrap())
+        .collect_vec();
+
+    let mut res = 0;
+
+    loop {
+        robots
+            .iter_mut()
+            .for_each(|robot| robot.step(width, height));
+
+        res += 1;
+
+        let (xs, ys): (Vec<i32>, Vec<i32>) = robots.iter().map(|robot| robot.p).unzip();
+
+        let x_std_dev = std_deviation(&xs);
+        let y_std_dev = std_deviation(&ys);
+
+        if x_std_dev < 27.0 && y_std_dev < 27.0 {
+            print_grid(&robots, width, height);
+            return res;
+        }
+    }
 }
 
 fn main() {
