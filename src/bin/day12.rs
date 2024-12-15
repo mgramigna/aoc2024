@@ -97,9 +97,40 @@ impl Grid {
     }
 }
 
+const DIR: [(i32, i32); 4] = [(1, 0), (0, 1), (0, -1), (-1, 0)];
+
 impl Area {
     fn count_sides(&self) -> usize {
-        todo!()
+        let mut side_count = 0;
+        for dir in DIR {
+            let mut sides = HashSet::new();
+            for pos in &self.coords {
+                let tmp = (
+                    (pos.0 as i32 + dir.0) as usize,
+                    (pos.1 as i32 + dir.1) as usize,
+                );
+                if !self.coords.contains(&tmp) {
+                    sides.insert(tmp);
+                }
+            }
+            let mut remove = HashSet::new();
+            for side in &sides {
+                let mut tmp = (
+                    (side.0 as i32 + dir.1) as usize,
+                    (side.1 as i32 + dir.0) as usize,
+                );
+                while sides.contains(&tmp) {
+                    remove.insert(tmp);
+                    tmp = (
+                        (tmp.0 as i32 + dir.1) as usize,
+                        (tmp.1 as i32 + dir.0) as usize,
+                    );
+                }
+            }
+            side_count += sides.len() - remove.len();
+        }
+
+        side_count
     }
 }
 
